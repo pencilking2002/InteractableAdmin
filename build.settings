@@ -1,0 +1,24 @@
+-- Supported values for orientation:
+-- portrait, portraitUpsideDown, landscapeLeft, landscapeRight
+
+settings = {
+
+    window = {
+        defaultMode = normal,
+        minViewWidth = 320,
+        minViewHeight = 720,
+        resizable = true,
+        enableMaximizeButton = false,
+        enableMinimizeButton = true,
+        enableCloseButton = true,
+        suspendWhenMinimized = true,
+
+     },
+        titleText = {
+            default = "Window Title Test",
+     },
+
+    osx = {
+
+    }
+}
