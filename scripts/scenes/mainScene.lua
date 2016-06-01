@@ -18,24 +18,30 @@ local scenarioMenu = require('scripts.scenarioMenu')
 local slideNode = require('scripts.slideNode')
 local menuBarClass = require('scripts.menuBar')
 local curve = require('scripts.curve')
+local util = require('scripts.lib.utils')
 
-local menuBar
 
 -- Forward Method delcarations
 local createSlideNode
 local createAdminScenarioButton
 local createAdminSlideButton
---local createBezierCurve
 local onTouchEvent
+local createBackground
+
 
 -- Forward var declarations
 local sceneGroup
+local menuBar
+local bg
+
 
 function mainScene:create( event )
+    
     sceneGroup = self.view
 
-    -- Initialize the menu bar
+    bg = createBackground()
 
+    -- Initialize the menu bar
     print (scenarioMenu.test)
     -- Create a new scenario drop down menu
     --local menu = scenarioMenu.new(20, 20)
@@ -56,6 +62,21 @@ mainScene:addEventListener( "create", mainScene)
 --[[-------------------------------------------\
 | Private methods                              |
 \---------------------------------------------]]
+
+function createBackground()
+    local x, y = display.contentCenterX, display.contentCenterY
+    local scale = 0.1
+    local bg = display.newRect(x,y, 2048, 2048)
+    display.setDefault('textureWrapX', 'repeat')
+    display.setDefault( 'textureWrapY', 'repeat')
+
+    util.setAnchors(bg, 0.5, 0.5)
+    bg.fill = { type='image', filename='assets/images/grid5.jpg'}
+    bg.fill.scaleX = scale
+    bg.fill.scaleY = scale
+    sceneGroup:insert(bg)
+    return bg
+end
 
 function onTouchEvent(event)
 --     if (event.phase == 'began') then
