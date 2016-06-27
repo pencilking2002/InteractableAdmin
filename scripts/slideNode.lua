@@ -21,6 +21,7 @@ local createInputCircle
 local outputCircleHandler
 local endCapHandler
 local drawCurve
+local createTitle
 
 local circleImageSheetOptions = {
     width = 18,
@@ -55,6 +56,9 @@ function slideNode.new(sceneGroup)
     -- Create an output circle
     local outputCircle = createOutputCirlce(node)
 
+    -- Create an editable text fiel for the slide title
+    local title_grp = createTitle(node)
+
     -- Insert all elements into groups
     slideNodeGroup:insert(node)
     slideNodeGroup:insert(outputCircle)
@@ -63,6 +67,7 @@ function slideNode.new(sceneGroup)
     outputCircle.slideNodeGroup = slideNodeGroup
 
     sceneGroup:insert(slideNodeGroup)
+    slideNodeGroup:insert(title_grp)
 
     -- Add touch listener to slide node
     node:addEventListener( "touch", nodeTouchListener)
@@ -71,6 +76,7 @@ function slideNode.new(sceneGroup)
     instance.slideNodeGroup = slideNodeGroup
     instance.node = node
     node.slideNodeGroup = slideNodeGroup
+    node.slideNodeGroup.sceneGroup = sceneGroup
 
     -- Cache the instance in the slideNodes table
     table.insert(slideNodes, instance)
@@ -87,54 +93,54 @@ end
 -- nodeTouchListener()
 -- Functionality for selecting and moving a node slide
 function nodeTouchListener(event)
-    if (event.phase == "began") then
+if (event.phase == "began") then
 
-        local node = event.target
-        local group = event.target.slideNodeGroup
+    local node = event.target
+    local group = event.target.slideNodeGroup
 
-        for n in ipairs(slideNodes) do
-           -- print ('node ID' ..node.id)
-           -- print('other node ID: ' ..slideNodes[n].node.id)
-            if (slideNodes[n].node == node) then
-                slideNodes[n].node:setStrokeColor(constants.color.white)
-            else
-                print (slideNodes[n])
-                slideNodes[n].node:setStrokeColor(1,1,1)
-            end
-        end
-
-        display.getCurrentStage():setFocus( node, event.id )
-        node.isFocus = true
-        --node.markX = node.x    -- store x location of object
-        --node.markY = node.y    -- store y location of object
-
-        group.markX = group.x
-        group.markY = group.y
-
-    elseif (event.target.isFocus) then
-
-        local node = event.target
-        local group = event.target.slideNodeGroup
-
-        if (event.phase == "moved") then
-
-            --local x = (event.x - event.xStart) + node.markX
-            --local y = (event.y - event.yStart) + node.markY
-
-            local groupX = (event.x - event.xStart) + group.markX
-            local groupY = (event.y - event.yStart) + group.markY
-
-            --node.x = x
-            --node.y = y    -- move object based on calculations above
-            group.x = groupX
-            group.y = groupY
-
-        elseif (event.phase == "ended" or event.phase == "cancelled") then
-            display.getCurrentStage():setFocus(node, nil)
-            node.isFocus = false
+    for n in ipairs(slideNodes) do
+       -- print ('node ID' ..node.id)
+       -- print('other node ID: ' ..slideNodes[n].node.id)
+        if (slideNodes[n].node == node) then
+            slideNodes[n].node:setStrokeColor(constants.color.white)
+        else
+            print (slideNodes[n])
+            slideNodes[n].node:setStrokeColor(1,1,1)
         end
     end
-    return true
+
+    display.getCurrentStage():setFocus( node, event.id )
+    node.isFocus = true
+    --node.markX = node.x    -- store x location of object
+    --node.markY = node.y    -- store y location of object
+
+    group.markX = group.x
+    group.markY = group.y
+
+elseif (event.target.isFocus) then
+
+    local node = event.target
+    local group = event.target.slideNodeGroup
+
+    if (event.phase == "moved") then
+
+        --local x = (event.x - event.xStart) + node.markX
+        --local y = (event.y - event.yStart) + node.markY
+
+        local groupX = (event.x - event.xStart) + group.markX
+        local groupY = (event.y - event.yStart) + group.markY
+
+        --node.x = x
+        --node.y = y    -- move object based on calculations above
+        group.x = groupX
+        group.y = groupY
+
+    elseif (event.phase == "ended" or event.phase == "cancelled") then
+        display.getCurrentStage():setFocus(node, nil)
+        node.isFocus = false
+    end
+end
+return true
 end
 
 -- createOutputCircle()
@@ -174,8 +180,8 @@ function outputCircleHandler(event)
             
             -- Offset the curve group by setting its coordinates to the difference of the curveGroup and the slideNodeGroup
             -- We have to do this because we are offseting the slideNodeGroup if we drag it around
-            target.curve.group.x = target.curve.group.x - target.slideNodeGroup.x
-            target.curve.group.y = target.curve.group.y - target.slideNodeGroup.y
+            target.curve.group.x = target.curve.group.x - target.slideNodeGroup.x - target.slideNodeGroup.sceneGroup.x
+            target.curve.group.y = target.curve.group.y - target.slideNodeGroup.y - target.slideNodeGroup.sceneGroup.y
 
             print ('created curve')
 
@@ -261,6 +267,54 @@ function drawCurve(event, group)
     group.line = nil
     group.line = curve:drawLine(event)
     group:insert(group.line)
+end
+
+function createTitle(node)
+    local group = display.newGroup()
+
+    local slideTitleOptions = 
+    {
+        text = "Slide Title",     
+        x = node.x + 8,
+        y = node.y + 10,
+        width = node.width - 25,
+        font = native.systemFont,   
+        fontSize = 16
+    }
+
+    local title = display.newText(slideTitleOptions)
+    title:setFillColor(0,0,0)
+
+    local titleTextField = native.newTextField(node.x + 8, node.y + 10, node.width - 25, 20)
+    titleTextField.isVisible = false
+
+    -- Toggle title when its double cliked
+    local function titleTapHandler(event)
+        if (event.numTaps == 2) then
+            print('double click')
+            event.target.isVisible = false
+            titleTextField.isVisible = true
+            titleTextField.text = title.text
+            native.setKeyboardFocus(titleTextField)
+        end
+    end
+    title:addEventListener('tap', titleTapHandler)
+
+    -- Show title when the user is finished entering text
+    local function titleTextFieldHandler(event)
+        if (event.phase == 'submitted' or event.phase == 'ended') then
+            print ('submitted')
+            event.target.isVisible = false
+            title.isVisible = true
+            title.text = event.target.text
+        end
+    end
+    titleTextField:addEventListener('userInput', titleTextFieldHandler)
+
+    group:insert(title)
+    group:insert(titleTextField)
+    
+    return group
 end
 
 return slideNode

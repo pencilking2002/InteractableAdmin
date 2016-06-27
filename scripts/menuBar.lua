@@ -70,7 +70,9 @@ function menuBarClass.init(sceneGroup)
         instance = {}
         instance.sceneGroup = sceneGroup
 
+        -- Get All scenarios from the database
         scenarios = db:getScenarios()
+
         for i in ipairs(scenarios) do
             local title = scenarios[i].title
             local id = scenarios[i].id
@@ -86,6 +88,7 @@ function menuBarClass.init(sceneGroup)
 
         menuBar_grp:insert(menuItems_grp)
 
+        -- Give menu ability to hide when user clicks off
         closeOpenMenuHandler()
 
     end

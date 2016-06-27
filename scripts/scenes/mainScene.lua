@@ -27,21 +27,22 @@ local createAdminScenarioButton
 local createAdminSlideButton
 local onTouchEvent
 local createBackground
-
+local bgDragHandler
 
 -- Forward var declarations
 local sceneGroup
 local menuBar
-local bg
+local bg_grp
 
 
 function mainScene:create( event )
     
     sceneGroup = self.view
 
-    bg = createBackground()
+    -- Create a background and a background group
+    bg_grp = createBackground()
+  
 
-    -- Initialize the menu bar
     print (scenarioMenu.test)
     -- Create a new scenario drop down menu
     --local menu = scenarioMenu.new(20, 20)
@@ -49,11 +50,17 @@ function mainScene:create( event )
     local adminScenarioButton = createAdminScenarioButton()
     local adminSlideButton = createAdminSlideButton()
 
-    sceneGroup:insert(adminScenarioButton)
-    --sceneGroup:insert(menu.menu)
-    menuBar = menuBarClass.init(sceneGroup)
-
     Runtime:addEventListener('touch', onTouchEvent)
+
+    -- Insert the background group into the sceneGroup
+    sceneGroup:insert(bg_grp)
+
+    sceneGroup:insert(adminSlideButton)
+    sceneGroup:insert(adminScenarioButton)
+
+
+    -- Initialize the menu bar
+    menuBar = menuBarClass.init(sceneGroup)
 end
 
 -- Listener setup
@@ -64,18 +71,80 @@ mainScene:addEventListener( "create", mainScene)
 \---------------------------------------------]]
 
 function createBackground()
+    
+    local group = display.newGroup()
+
     local x, y = display.contentCenterX, display.contentCenterY
     local scale = 0.1
     local bg = display.newRect(x,y, 2048, 2048)
     display.setDefault('textureWrapX', 'repeat')
-    display.setDefault( 'textureWrapY', 'repeat')
+    display.setDefault('textureWrapY', 'repeat')
 
     util.setAnchors(bg, 0.5, 0.5)
     bg.fill = { type='image', filename='assets/images/grid5.jpg'}
     bg.fill.scaleX = scale
     bg.fill.scaleY = scale
-    sceneGroup:insert(bg)
-    return bg
+    bg.group = group
+    group:insert(bg)
+    
+    -- Used for clamping the dragging of the bg
+    bg.clampX = bg.width/4
+    bg.clampY = bg.height/4
+
+    bg:addEventListener('touch', bgDragHandler)
+
+    return group
+end
+
+-- Functionality for Moving the background around
+function bgDragHandler(event)
+    local bg = event.target
+    local group = bg.group
+
+    if (event.phase == "began") then
+
+        display.getCurrentStage():setFocus( bg, event.id )
+        bg.isFocus = true
+
+        --print ('touch')
+
+        group.markX = group.x
+        group.markY = group.y
+
+    elseif (bg.isFocus) then
+
+        if (event.phase == "moved") then
+    
+
+            local groupX = (event.x - event.xStart) + group.markX
+            local groupY = (event.y - event.yStart) + group.markY
+
+            group.x = groupX
+            group.y = groupY
+
+             -- Clamp horizontal BG dragging
+            if (group.x < -bg.clampX) then
+                group.x = -bg.clampX
+            elseif(group.x > bg.clampX) then
+                group.x = bg.clampX
+            end
+
+            -- Clamp vertical BG dragging
+            if (group.y < -bg.clampY) then
+                group.y = -bg.clampY
+            elseif(group.y > bg.clampY) then
+                group.y = bg.clampY
+            end
+
+
+
+        elseif (event.phase == "ended" or event.phase == "cancelled") then
+            display.getCurrentStage():setFocus(bg, nil)
+            bg.isFocus = false
+        end
+    end
+    
+    return true
 end
 
 function onTouchEvent(event)
@@ -100,8 +169,6 @@ function createAdminScenarioButton()
     })
     button:setFillColor(0,0,0)
 
-    sceneGroup:insert(button)
-
     return button
 end
 
@@ -119,17 +186,12 @@ function createAdminSlideButton()
         onRelease = createSlideNode
     })
     button:setFillColor(0,0,0)
-
-    sceneGroup:insert(button)
-
     return button
 end
 
 -- createSlideNode
 function createSlideNode ()
-    slideNode.new(sceneGroup)
+    slideNode.new(bg_grp)
 end
-
-
 
 return mainScene
